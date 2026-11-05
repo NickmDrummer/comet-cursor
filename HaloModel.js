@@ -76,9 +76,11 @@ function parseMonitors(raw) {
   }
 }
 
-// Click bridge file written by cursor-halo.lua: {button:"left"|"right"|"middle", at:number}.
-// `at` is a monotonic counter (one higher per press); the widget ignores
-// repeats of the same value so rapid clicks are never merged.
+// Click bridge file written by cursor-halo.lua:
+// {button:"left"|"right"|"middle", at:number, down:boolean}.
+// `at` is a monotonic counter (one higher per event); the widget ignores
+// repeats of the same value so rapid clicks are never merged. `down` is false
+// on release, which is how a held button keeps its color.
 function parseClick(raw) {
   try {
     var o = JSON.parse(String(raw || ""));
@@ -86,7 +88,7 @@ function parseClick(raw) {
     if (b !== "left" && b !== "right" && b !== "middle") return null;
     var at = Number(o.at);
     if (!isFinite(at) || at < 0) return null;
-    return { button: b, at: Math.min(at, 9007199254740991) };
+    return { button: b, at: Math.min(at, 9007199254740991), down: o.down !== false };
   } catch (e) {
     return null;
   }
@@ -107,6 +109,7 @@ var MOVE_IDLE_MS = 1200;
 function shouldShow(o) {
   if (!o || o.enabled !== true) return false;
   if (o.onScreen !== true) return false;
+  if (o.held === true) return true;
   if (String(o.mode || "") !== "On move") return true;
   var now = Number(o.now) || 0;
   var moved = now - (Number(o.lastMoveAt) || 0);

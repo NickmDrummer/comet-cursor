@@ -42,7 +42,8 @@ Item {
     }
   }
 
-  // Crisp main ring.
+  // Crisp main ring. The center stays empty: a filled tint washed out the
+  // content under it, while Cursor Pro keeps the area readable.
   Rectangle {
     id: ring
     anchors.centerIn: parent
@@ -50,10 +51,26 @@ Item {
     height: parent.height - 8
     radius: root.shape === "Circle" ? width / 2 : (root.shape === "Rounded" ? width * 0.28 : width * 0.22)
     rotation: root.shape === "Rhombus" ? 45 : 0
-    color: Qt.rgba(root.glowColor.r, root.glowColor.g, root.glowColor.b, 0.10 + 0.12 * root.pulse)
+    color: "transparent"
     border.color: Qt.rgba(root.glowColor.r, root.glowColor.g, root.glowColor.b, 0.95)
     border.width: root.borderWidth
     scale: root.pulseScale
+
+    // Inner band: a translucent layer that fills from its own thin inner edge
+    // out to the thick ring, instead of a solid second stroke. At 0.25 alpha
+    // it reads as a soft halo band while the content underneath stays legible.
+    // Thickness is 1.5x the old inner stroke (0.3 -> 0.45 of the ring width)
+    // plus the gap up to the ring, so the band spans the whole annulus.
+    Rectangle {
+      id: innerBand
+      anchors.centerIn: parent
+      width: parent.width - (root.borderWidth * 2)
+      height: width
+      radius: root.shape === "Circle" ? width / 2 : (root.shape === "Rounded" ? width * 0.28 : width * 0.22)
+      color: "transparent"
+      border.color: Qt.rgba(root.glowColor.r, root.glowColor.g, root.glowColor.b, 0.25 + 0.10 * root.pulse)
+      border.width: Math.max(2, Math.round(root.borderWidth * 0.45) + Style.space(3))
+    }
 
     Behavior on scale {
       NumberAnimation { duration: Style.duration(180); easing.type: Easing.Bezier; easing.bezierCurve: Style.easeOut }

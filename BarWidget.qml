@@ -84,6 +84,7 @@ BarWidget {
     return Halo.shouldShow({
       enabled: root.cfgEnabled,
       onScreen: String(screen || "") === root.screenName && root.cursorOnScreen,
+      held: root.heldButton !== "",
       mode: root.modeName,
       now: Date.now(),
       lastMoveAt: root.lastMoveAt,
@@ -163,6 +164,9 @@ BarWidget {
   property double lastClickAt: 0
   // Epoch ms of the last click, for the On-move "clicked while still" rule.
   property double lastClickShownAt: 0
+  // Button currently held down. While set, the flash color stays until the
+  // release arrives, so a long press reads as a color state, not a blink.
+  property string heldButton: ""
   // Time does not re-evaluate bindings by itself: in On-move mode a ticker
   // re-checks visibility so the halo hides ~1s after the cursor stops.
   property int hideTick: 0
@@ -190,6 +194,20 @@ BarWidget {
     if (c.at === root.lastClickAt) return;
     root.lastClickAt = c.at;
     root.clickButton = c.button;
+
+    if (!c.down) {
+      // Release: only the button that was actually held ends the color, so
+      // releasing some other button does not clear a still-held highlight.
+      if (root.heldButton === c.button) {
+        root.heldButton = "";
+        root.pulse = 0;
+        root.currentColor = root.baseColor;
+      }
+      return;
+    }
+
+    root.heldButton = c.button;
+    holdWatchdog.restart();
     root.clickSeq = root.clickSeq + 1;
     root.currentColor = Halo.clickColorFor(c.button, root.leftColor, root.rightColor, root.baseColor);
     root.rippleColor = root.currentColor;
@@ -203,6 +221,18 @@ BarWidget {
     }
   }
 
+  // A release bind can be missed (submap, compositor hiccup). Never leave the
+  // halo stuck in a click color forever.
+  Timer {
+    id: holdWatchdog
+    interval: 15000
+    repeat: false
+    onTriggered: if (root.heldButton !== "") {
+      root.heldButton = "";
+      root.currentColor = root.baseColor;
+    }
+  }
+
   // If the file was caught mid-write (truncate lands before the bytes), the
   // parse above sees "" and ignores it; one delayed re-read closes the race.
   Timer {
@@ -212,13 +242,15 @@ BarWidget {
     onTriggered: root.handleClickFile(clickFile.text())
   }
 
+  // The pulse (scale) always settles to normal; only the COLOR is held while
+  // a button stays down past the 200ms flash.
   Timer {
     id: pulseDecay
     interval: 200
     repeat: false
     onTriggered: {
       root.pulse = 0;
-      root.currentColor = root.baseColor;
+      if (root.heldButton === "") root.currentColor = root.baseColor;
     }
   }
   Timer {

@@ -18,17 +18,29 @@ os.execute("mkdir -p " .. dir)
 local click_file = dir .. "/click.json"
 
 local click_seq = 0
-local function record_click(button)
+local function record_event(button, down)
   -- Monotonic counter (not wall-clock): the widget ignores repeats of the
-  -- same value, so every press must produce a new one even within one second.
+  -- same value, so every event must produce a new one even within one second.
+  -- `down` lets the widget keep the click color while the button is held,
+  -- which is how a long press stays colored instead of flashing 200ms.
   click_seq = click_seq + 1
   local f = io.open(click_file, "w")
   if f then
-    f:write(string.format('{"button":"%s","at":%d}', button, click_seq))
+    f:write(string.format('{"button":"%s","at":%d,"down":%s}',
+      button, click_seq, down and "true" or "false"))
     f:close()
   end
 end
 
-o.bind("mouse:272", "Cursor Halo: click flash (left)", function() record_click("left") end, { mouse = true, non_consuming = true })
-o.bind("mouse:273", "Cursor Halo: click flash (right)", function() record_click("right") end, { mouse = true, non_consuming = true })
-o.bind("mouse:274", "Cursor Halo: click flash (middle)", function() record_click("middle") end, { mouse = true, non_consuming = true })
+-- Press and release halves. The release bind ignores modifiers and is
+-- transparent so letting go always reaches the app, whatever else is held.
+local function bind_button(code, button, label)
+  o.bind(code, "Cursor Halo: " .. label .. " flash", function() record_event(button, true) end,
+    { mouse = true, non_consuming = true })
+  o.bind(code, "Cursor Halo: " .. label .. " release", function() record_event(button, false) end,
+    { mouse = true, release = true, non_consuming = true, transparent = true, ignore_mods = true })
+end
+
+bind_button("mouse:272", "left", "left-click")
+bind_button("mouse:273", "right", "right-click")
+bind_button("mouse:274", "middle", "middle-click")

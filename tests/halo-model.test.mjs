@@ -30,10 +30,21 @@ test("cursor and monitor parsing is bounded", () => {
 });
 
 test("click parsing rejects markup", () => {
-  assert.deepEqual(Halo.parseClick('{"button":"left","at":123}'), { button: "left", at: 123 });
+  assert.deepEqual(Halo.parseClick('{"button":"left","at":123}'), { button: "left", at: 123, down: true });
   assert.equal(Halo.parseClick('{"button":"<img>","at":1}'), null);
   assert.equal(Halo.clickColorFor("left", "#FF2D55", "#3B82F6", "#00FFC8"), "#FF2D55");
   assert.equal(Halo.clickColorFor("right", "#FF2D55", "#3B82F6", "#00FFC8"), "#3B82F6");
+});
+
+test("release events parse with down:false", () => {
+  assert.deepEqual(Halo.parseClick('{"button":"right","at":7,"down":false}'), { button: "right", at: 7, down: false });
+  assert.equal(Halo.parseClick('{"button":"left","at":8,"down":true}').down, true);
+});
+
+test("a held button keeps the halo visible on move mode", () => {
+  const still = { enabled: true, onScreen: true, mode: "On move", now: 1000000, lastMoveAt: 0, lastClickAt: 0 };
+  assert.equal(Halo.shouldShow({ ...still, held: false }), false);
+  assert.equal(Halo.shouldShow({ ...still, held: true }), true);
 });
 
 test("on-move mode shows on movement OR click, hides when still", () => {
