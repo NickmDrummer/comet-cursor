@@ -401,18 +401,51 @@ BarWidget {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
+  // The comet glyph is not in the bar's font, and Qt's fallback picks a color
+  // emoji font for it. Ship a monochrome symbol font and load it explicitly so
+  // the icon stays monochrome (and takes the bar's own color) everywhere.
+  FontLoader {
+    id: cometFont
+    source: Qt.resolvedUrl("assets/NotoSansSymbols2-Regular.ttf")
+  }
+
   WidgetButton {
     id: button
     anchors.fill: parent
     bar: root.bar
-    // Comet glyph + the pill name in caps. A plain text pill (like the other
-    // bar plugins) keeps the label from clipping: BarIconButton is fixed to
-    // one icon slot and would cut "COMET" off.
-    text: root.vertical ? "☄" : "☄ COMET"
-    labelVisible: true
-    active: root.cfgEnabled
+    // Two texts, not one: the glyph needs its own font, the label the bar's.
+    text: ""
+    hasVisualContent: true
+    labelVisible: false
+    // Never the accent color. Enabled is the bar foreground (white), disabled
+    // is the usual dim, so toggling no longer paints the pill red.
+    active: false
     dimmed: !root.cfgEnabled
+    fixedWidth: root.vertical ? -1 : Math.round(pillRow.implicitWidth + Style.space(18))
     tooltipText: root.cfgEnabled ? strings.t("bar.tooltip-on", "Comet on — click to pause, right-click for settings") : strings.t("bar.tooltip-off", "Comet off — click to highlight the cursor")
+
+    Row {
+      id: pillRow
+      anchors.centerIn: parent
+      spacing: Style.space(4)
+
+      Text {
+        text: "☄"
+        textFormat: Text.PlainText
+        font.family: cometFont.name
+        font.pixelSize: Style.font.icon
+        color: button.foreground
+      }
+
+      Text {
+        visible: !root.vertical
+        text: "COMET"
+        textFormat: Text.PlainText
+        font.family: button.fontFamily
+        font.pixelSize: Style.font.body
+        color: button.foreground
+      }
+    }
 
     onPressed: function(b) {
       if (b === Qt.RightButton) root.menuOpen = !root.menuOpen;
