@@ -56,10 +56,15 @@ are yours to delete by hand whenever you like.
 ## Usage
 
 - **Bar pill `☄ COMET`** — left-click toggles the effect, right-click opens the
-  settings window.
+  settings window. The label stays in the bar's foreground (white when on, dimmed
+  when off); it never changes hue. The comet is monochrome and drawn from a symbol
+  font bundled in `assets/`, so it does not fall back to a color emoji.
 - **APPEARANCE** — shape (Circle / Rhombus / Rounded), size, border weight, halo
-  color and the left/right click flash colors. Each palette has six presets plus
-  a `+` swatch that opens an HSV picker with a hex field for any other color.
+  color and the left/right click flash colors. Each palette has six presets, up
+  to three saved custom colors of your own, and a `+` swatch that opens an HSV
+  picker for another one. Clicking a saved custom color applies it and opens it
+  for editing; typing a preset closes the picker. The picker also takes typed hex
+  values (Enter, or clicking outside the field, applies them).
 - **BEHAVIOR** — enable, show (Always / On move), spotlight, ripple. Holding a
   click keeps its color until you release it.
 - **TRAILS** — style (Off / Pixels / Feather / Ribbon), length, width, opacity,
@@ -118,6 +123,13 @@ omarchy bar set nickmdrummer.comet-cursor <key> <value>
 - **The comet glyph looks odd** — `☄` is not part of the bar's font
   (`Obel Mono`), so it is drawn by font fallback. Edit `text` in `BarWidget.qml`
   if you prefer another glyph.
+
+## Third-party
+
+- **Noto Sans Symbols 2** (`assets/NotoSansSymbols2-Regular.ttf`) — Copyright 2022
+  The Noto Project Authors. Bundled so the comet glyph renders monochrome instead
+  of falling back to a color emoji font. Licensed under the SIL Open Font License
+  1.1, reproduced in `assets/OFL.txt`.
 
 ## License
 
