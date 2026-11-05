@@ -28,7 +28,13 @@
       "rightClickColor": "#3B82F6",
       "mode": "Always",
       "spotlight": false,
-      "ripple": true
+      "ripple": true,
+      "trailStyle": "Off",
+      "trailLength": 600,
+      "trailWidth": 6,
+      "trailOpacity": 80,
+      "trailColorMode": "Halo",
+      "trailColor": "#00FFC8"
     },
     "schema": [
       {
@@ -134,6 +140,69 @@
         "type": "boolean",
         "label": "Ripple on click",
         "defaultValue": true
+      },
+      {
+        "key": "trailStyle",
+        "type": "enum",
+        "label": "Trail style",
+        "options": [
+          "Off",
+          "Pixels",
+          "Feather",
+          "Ribbon"
+        ],
+        "defaultValue": "Off"
+      },
+      {
+        "key": "trailLength",
+        "type": "integer",
+        "label": "Trail length (ms)",
+        "min": 200,
+        "max": 2000,
+        "step": 50,
+        "defaultValue": 600
+      },
+      {
+        "key": "trailWidth",
+        "type": "integer",
+        "label": "Trail width",
+        "min": 2,
+        "max": 16,
+        "step": 1,
+        "defaultValue": 6
+      },
+      {
+        "key": "trailOpacity",
+        "type": "integer",
+        "label": "Trail opacity (%)",
+        "min": 10,
+        "max": 100,
+        "step": 5,
+        "defaultValue": 80
+      },
+      {
+        "key": "trailColorMode",
+        "type": "enum",
+        "label": "Trail color source",
+        "options": [
+          "Halo",
+          "Custom"
+        ],
+        "defaultValue": "Halo"
+      },
+      {
+        "key": "trailColor",
+        "type": "enum",
+        "label": "Trail color",
+        "options": [
+          "#00FFC8",
+          "#FF2D55",
+          "#3B82F6",
+          "#A855F7",
+          "#FFB020",
+          "#FFFFFF"
+        ],
+        "defaultValue": "#00FFC8"
       }
     ]
   }
