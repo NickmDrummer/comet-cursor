@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "id": "nickmdrummer.cursor-halo",
+  "name": "Cursor Halo",
+  "version": "0.1.0",
+  "author": "nickmdrummer",
+  "license": "MIT",
+  "description": "Cursor Pro style mouse highlighter for demos and screencasts: glowing shape that follows the cursor with click pulse, spotlight dim and ripple.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Cursor Halo",
+    "description": "Highlight the cursor with a glowing shape. Click for on/off, right-click for appearance settings.",
+    "category": "Demos",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "enabled": false,
+      "shape": "Circle",
+      "color": "#00FFC8",
+      "size": "L",
+      "borderWeight": "Bold",
+      "leftClickColor": "#FF2D55",
+      "rightClickColor": "#3B82F6",
+      "mode": "Always",
+      "spotlight": false,
+      "ripple": true
+    },
+    "schema": [
+      {
+        "key": "enabled",
+        "type": "boolean",
+        "label": "Enabled",
+        "defaultValue": false
+      },
+      {
+        "key": "shape",
+        "type": "enum",
+        "label": "Shape",
+        "options": [
+          "Circle",
+          "Rhombus",
+          "Rounded"
+        ],
+        "defaultValue": "Circle"
+      },
+      {
+        "key": "color",
+        "type": "enum",
+        "label": "Halo color",
+        "options": [
+          "#00FFC8",
+          "#FF2D55",
+          "#3B82F6",
+          "#A855F7",
+          "#FFB020",
+          "#FFFFFF"
+        ],
+        "defaultValue": "#00FFC8"
+      },
+      {
+        "key": "size",
+        "type": "enum",
+        "label": "Size",
+        "options": [
+          "S",
+          "M",
+          "L",
+          "XL"
+        ],
+        "defaultValue": "L"
+      },
+      {
+        "key": "borderWeight",
+        "type": "enum",
+        "label": "Border weight",
+        "options": [
+          "Thin",
+          "Regular",
+          "Bold"
+        ],
+        "defaultValue": "Bold"
+      },
+      {
+        "key": "leftClickColor",
+        "type": "enum",
+        "label": "Left-click color",
+        "options": [
+          "#00FFC8",
+          "#FF2D55",
+          "#3B82F6",
+          "#A855F7",
+          "#FFB020",
+          "#FFFFFF"
+        ],
+        "defaultValue": "#FF2D55"
+      },
+      {
+        "key": "rightClickColor",
+        "type": "enum",
+        "label": "Right-click color",
+        "options": [
+          "#00FFC8",
+          "#FF2D55",
+          "#3B82F6",
+          "#A855F7",
+          "#FFB020",
+          "#FFFFFF"
+        ],
+        "defaultValue": "#3B82F6"
+      },
+      {
+        "key": "mode",
+        "type": "enum",
+        "label": "Show",
+        "options": [
+          "Always",
+          "On move"
+        ],
+        "defaultValue": "Always"
+      },
+      {
+        "key": "spotlight",
+        "type": "boolean",
+        "label": "Spotlight (dim background)",
+        "defaultValue": false
+      },
+      {
+        "key": "ripple",
+        "type": "boolean",
+        "label": "Ripple on click",
+        "defaultValue": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "bar.tooltip-on": "Halo on — click to pause, right-click for settings",
+  "bar.tooltip-off": "Halo off — click to highlight cursor",
+  "popup.title": "Cursor Halo",
+  "popup.enabled": "Enabled",
+  "popup.enabled-hint": "Left-click the bar icon toggles too",
+  "popup.shape": "Shape",
+  "popup.size": "Size",
+  "popup.border": "Border weight",
+  "popup.mode": "Show",
+  "popup.color": "Halo color",
+  "popup.left-click": "Left-click flash",
+  "popup.right-click": "Right-click flash",
+  "popup.spotlight": "Spotlight",
+  "popup.spotlight-hint": "Dim everything outside the halo",
+  "popup.ripple": "Ripple on click",
+  "popup.ripple-hint": "Expanding ring when you click"
+}

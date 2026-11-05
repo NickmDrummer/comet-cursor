@@ -1,0 +1,18 @@
+{
+  "bar.tooltip-on": "Halo activado — clic para pausar, clic derecho para ajustes",
+  "bar.tooltip-off": "Halo desactivado — clic para resaltar el cursor",
+  "popup.title": "Cursor Halo",
+  "popup.enabled": "Activado",
+  "popup.enabled-hint": "Clic izquierdo en la barra también alterna",
+  "popup.shape": "Forma",
+  "popup.size": "Tamaño",
+  "popup.border": "Grosor del borde",
+  "popup.mode": "Mostrar",
+  "popup.color": "Color del halo",
+  "popup.left-click": "Destello clic izquierdo",
+  "popup.right-click": "Destello clic derecho",
+  "popup.spotlight": "Foco (spotlight)",
+  "popup.spotlight-hint": "Oscurece todo fuera del halo",
+  "popup.ripple": "Onda al hacer clic",
+  "popup.ripple-hint": "Anillo expansivo al hacer clic"
+}
