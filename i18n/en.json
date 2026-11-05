@@ -1,6 +1,6 @@
 {
-  "bar.tooltip-on": "Halo on — click to pause, right-click for settings",
-  "bar.tooltip-off": "Halo off — click to highlight cursor",
+  "bar.tooltip-on": "Comet on — click to pause, right-click for settings",
+  "bar.tooltip-off": "Comet off — click to highlight the cursor",
   "popup.title": "Comet Cursor",
   "tab.appearance": "Appearance",
   "tab.behavior": "Behavior",

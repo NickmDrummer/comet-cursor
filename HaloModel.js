@@ -349,6 +349,80 @@ function shouldShow(o) {
   return moved < MOVE_IDLE_MS || clicked < MOVE_IDLE_MS;
 }
 
+// ---- color helpers (custom picker) --------------------------------------
+function parseHexColor(value) {
+  var s = String(value === undefined || value === null ? "" : value).trim().replace(/^#/, "");
+  if (/^[0-9A-Fa-f]{3}$/.test(s)) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
+  if (!/^[0-9A-Fa-f]{6}$/.test(s)) return null;
+  return {
+    r: parseInt(s.substr(0, 2), 16),
+    g: parseInt(s.substr(2, 2), 16),
+    b: parseInt(s.substr(4, 2), 16)
+  };
+}
+
+function rgbToHex(r, g, b) {
+  function part(n) {
+    var v = Math.max(0, Math.min(255, Math.round(Number(n) || 0))).toString(16).toUpperCase();
+    return v.length < 2 ? "0" + v : v;
+  }
+  return "#" + part(r) + part(g) + part(b);
+}
+
+// "#abc" -> "#AABBCC", anything else -> null.
+function normalizeHex(value) {
+  var c = parseHexColor(value);
+  return c ? rgbToHex(c.r, c.g, c.b) : null;
+}
+
+// {h: 0..360, s: 0..1, v: 0..1}
+function rgbToHsv(r, g, b) {
+  var rr = Math.max(0, Math.min(255, Number(r) || 0)) / 255;
+  var gg = Math.max(0, Math.min(255, Number(g) || 0)) / 255;
+  var bb = Math.max(0, Math.min(255, Number(b) || 0)) / 255;
+  var max = Math.max(rr, gg, bb);
+  var min = Math.min(rr, gg, bb);
+  var d = max - min;
+  var h = 0;
+  if (d > 0) {
+    if (max === rr) h = 60 * (((gg - bb) / d) % 6);
+    else if (max === gg) h = 60 * ((bb - rr) / d + 2);
+    else h = 60 * ((rr - gg) / d + 4);
+  }
+  if (h < 0) h += 360;
+  return { h: h, s: max === 0 ? 0 : d / max, v: max };
+}
+
+// {r, g, b} as 0..255
+function hsvToRgb(h, s, v) {
+  var hue = ((Number(h) || 0) % 360 + 360) % 360;
+  var sat = clamp(s, 0, 1);
+  var val = clamp(v, 0, 1);
+  var c = val * sat;
+  var hp = hue / 60;
+  var x = c * (1 - Math.abs(hp % 2 - 1));
+  var m = val - c;
+  var r = 0;
+  var g = 0;
+  var b = 0;
+  if (hp < 1) { r = c; g = x; }
+  else if (hp < 2) { r = x; g = c; }
+  else if (hp < 3) { g = c; b = x; }
+  else if (hp < 4) { g = x; b = c; }
+  else if (hp < 5) { r = x; b = c; }
+  else { r = c; b = x; }
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255)
+  };
+}
+
+function hsvToHex(h, s, v) {
+  var c = hsvToRgb(h, s, v);
+  return rgbToHex(c.r, c.g, c.b);
+}
+
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     COLORS: COLORS, SHAPES: SHAPES, SIZES: SIZES, WEIGHTS: WEIGHTS, MODES: MODES,
@@ -360,6 +434,8 @@ if (typeof module !== "undefined" && module.exports) {
     trailColorFor: trailColorFor, trimTrail: trimTrail, trailAge: trailAge,
     strokeOutline: strokeOutline, cycleEnum: cycleEnum, stepNumber: stepNumber,
     smoothPath: smoothPath, widthFactor: widthFactor,
+    parseHexColor: parseHexColor, normalizeHex: normalizeHex,
+    rgbToHex: rgbToHex, rgbToHsv: rgbToHsv, hsvToRgb: hsvToRgb, hsvToHex: hsvToHex,
     TRAIL_STYLES: TRAIL_STYLES,
     MOVE_IDLE_MS: MOVE_IDLE_MS, shouldShow: shouldShow
   };

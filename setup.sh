@@ -47,30 +47,20 @@ if [[ "$MODE" == "--remove" ]]; then
     exit 0
   fi
   backup "$HYPR_LUA"
-  python3 - "$HYPR_LUA" <<'PY'
-import sys
-
-path = sys.argv[1]
-with open(path, "r", encoding="utf-8") as handle:
-    lines = handle.readlines()
-
-out = []
-skipping = False
-for line in lines:
-    if line.startswith("-- [nickmdrummer.comet-cursor]"):
-        skipping = True
-        continue
-    if skipping:
-        if line.strip() == "end":
-            skipping = False
-        continue
-    out.append(line)
-
-with open(path, "w", encoding="utf-8") as handle:
-    handle.writelines(out)
-PY
+  # awk, not python: uninstalling must not depend on anything beyond a stock
+  # Omarchy system. Only the marked block is dropped; the rest of the file is
+  # written back byte for byte.
+  awk -v marker="-- [nickmdrummer.comet-cursor]" '
+    index($0, marker) == 1 { skipping = 1; next }
+    skipping && $0 ~ /^[[:space:]]*end[[:space:]]*$/ { skipping = 0; next }
+    skipping { next }
+    { print }
+  ' "$HYPR_LUA" > "$HYPR_LUA.comet-cursor.tmp" \
+    && mv "$HYPR_LUA.comet-cursor.tmp" "$HYPR_LUA" \
+    || { echo "setup: could not rewrite $HYPR_LUA" >&2; exit 1; }
   echo "setup: click-bridge hook removed."
   reload_hyprland
+  echo "setup: finish the uninstall with: omarchy plugin remove nickmdrummer.comet-cursor --yes"
   exit 0
 fi
 
@@ -85,11 +75,11 @@ else
   backup "$HYPR_LUA"
   cat >> "$HYPR_LUA" <<'EOF'
 -- [nickmdrummer.comet-cursor] click bridge for the cursor highlighter (managed by the plugin; safe to remove)
-local halo_path = os.getenv("HOME") .. "/.config/omarchy/plugins/nickmdrummer.comet-cursor/comet-cursor.lua"
-local halo_file = io.open(halo_path, "r")
-if halo_file then
-	halo_file:close()
-	dofile(halo_path)
+local comet_path = os.getenv("HOME") .. "/.config/omarchy/plugins/nickmdrummer.comet-cursor/comet-cursor.lua"
+local comet_file = io.open(comet_path, "r")
+if comet_file then
+	comet_file:close()
+	dofile(comet_path)
 end
 EOF
   echo "setup: click-bridge hook added."

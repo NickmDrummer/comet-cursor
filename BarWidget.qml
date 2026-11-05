@@ -345,6 +345,8 @@ BarWidget {
   property bool menuOpen: false
   // appearance | behavior | trails
   property string activeTab: "appearance"
+  // Which color row has its custom picker open ("" = none).
+  property string customColorTarget: ""
   function close() { root.menuOpen = false; }
 
   implicitWidth: button.implicitWidth
@@ -354,11 +356,14 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.vertical ? "" : "◎"
-    labelVisible: !root.vertical
+    // Comet glyph + the pill name in caps. A plain text pill (like the other
+    // bar plugins) keeps the label from clipping: BarIconButton is fixed to
+    // one icon slot and would cut "COMET" off.
+    text: root.vertical ? "☄" : "☄ COMET"
+    labelVisible: true
     active: root.cfgEnabled
     dimmed: !root.cfgEnabled
-    tooltipText: root.cfgEnabled ? strings.t("bar.tooltip-on", "Halo on — click to pause, right-click for settings") : strings.t("bar.tooltip-off", "Halo off — click to highlight cursor")
+    tooltipText: root.cfgEnabled ? strings.t("bar.tooltip-on", "Comet on — click to pause, right-click for settings") : strings.t("bar.tooltip-off", "Comet off — click to highlight the cursor")
 
     onPressed: function(b) {
       if (b === Qt.RightButton) root.menuOpen = !root.menuOpen;
@@ -411,9 +416,9 @@ BarWidget {
           width: parent.width
           fontSize: Style.font.bodySmall
           options: [
-            { value: "appearance", label: strings.t("tab.appearance", "Appearance") },
-            { value: "behavior", label: strings.t("tab.behavior", "Behavior") },
-            { value: "trails", label: strings.t("tab.trails", "Trails") }
+            { value: "appearance", label: strings.t("tab.appearance", "Appearance").toUpperCase() },
+            { value: "behavior", label: strings.t("tab.behavior", "Behavior").toUpperCase() },
+            { value: "trails", label: strings.t("tab.trails", "Trails").toUpperCase() }
           ]
           value: root.activeTab
           foreground: Commons.Color.popups.text
@@ -450,19 +455,43 @@ BarWidget {
           SwatchRow {
             title: strings.t("popup.color", "Halo color")
             current: Halo.cleanColor(root.setting("color", "#00FFC8"), "#00FFC8")
+            customActive: root.customColorTarget === "color"
             onPicked: function(c) { root.save({ color: Halo.cleanColor(c, "#00FFC8") }); }
+            onRequestCustom: root.customColorTarget = root.customColorTarget === "color" ? "" : "color"
+          }
+
+          ColorPicker {
+            visible: root.customColorTarget === "color"
+            value: Halo.cleanColor(root.setting("color", "#00FFC8"), "#00FFC8")
+            onCommitted: function(hex) { root.save({ color: Halo.cleanColor(hex, "#00FFC8") }); }
           }
 
           SwatchRow {
             title: strings.t("popup.left-click", "Left-click flash")
             current: Halo.cleanColor(root.setting("leftClickColor", "#FF2D55"), "#FF2D55")
+            customActive: root.customColorTarget === "leftClickColor"
             onPicked: function(c) { root.save({ leftClickColor: Halo.cleanColor(c, "#FF2D55") }); }
+            onRequestCustom: root.customColorTarget = root.customColorTarget === "leftClickColor" ? "" : "leftClickColor"
+          }
+
+          ColorPicker {
+            visible: root.customColorTarget === "leftClickColor"
+            value: Halo.cleanColor(root.setting("leftClickColor", "#FF2D55"), "#FF2D55")
+            onCommitted: function(hex) { root.save({ leftClickColor: Halo.cleanColor(hex, "#FF2D55") }); }
           }
 
           SwatchRow {
             title: strings.t("popup.right-click", "Right-click flash")
             current: Halo.cleanColor(root.setting("rightClickColor", "#3B82F6"), "#3B82F6")
+            customActive: root.customColorTarget === "rightClickColor"
             onPicked: function(c) { root.save({ rightClickColor: Halo.cleanColor(c, "#3B82F6") }); }
+            onRequestCustom: root.customColorTarget = root.customColorTarget === "rightClickColor" ? "" : "rightClickColor"
+          }
+
+          ColorPicker {
+            visible: root.customColorTarget === "rightClickColor"
+            value: Halo.cleanColor(root.setting("rightClickColor", "#3B82F6"), "#3B82F6")
+            onCommitted: function(hex) { root.save({ rightClickColor: Halo.cleanColor(hex, "#3B82F6") }); }
           }
         }
 
@@ -578,7 +607,15 @@ BarWidget {
             visible: root.trailColorMode === "Custom" && root.trailsOn
             title: strings.t("trail.color", "Trail color")
             current: Halo.cleanColor(root.setting("trailColor", "#00FFC8"), "#00FFC8")
+            customActive: root.customColorTarget === "trailColor"
             onPicked: function(c) { root.save({ trailColor: Halo.cleanColor(c, "#00FFC8") }); }
+            onRequestCustom: root.customColorTarget = root.customColorTarget === "trailColor" ? "" : "trailColor"
+          }
+
+          ColorPicker {
+            visible: root.customColorTarget === "trailColor"
+            value: Halo.cleanColor(root.setting("trailColor", "#00FFC8"), "#00FFC8")
+            onCommitted: function(hex) { root.save({ trailColor: Halo.cleanColor(hex, "#00FFC8") }); }
           }
 
           Text {
@@ -664,12 +701,15 @@ BarWidget {
     color: Qt.rgba(Commons.Color.popups.text.r, Commons.Color.popups.text.g, Commons.Color.popups.text.b, 0.14)
   }
 
-  // Color swatch row used three times in the popup.
+  // Color swatch row: the presets, plus a "custom" swatch that opens the
+  // inline picker for any other color.
   component SwatchRow: Column {
     id: sw
     required property string title
     required property string current
+    property bool customActive: false
     signal picked(string color)
+    signal requestCustom()
     width: parent ? parent.width : 0
     spacing: Style.space(6)
 
@@ -700,6 +740,35 @@ BarWidget {
             cursorShape: Qt.PointingHandCursor
             onClicked: sw.picked(parent.modelData)
           }
+        }
+      }
+
+      // Custom color: the current value when it is not one of the presets,
+      // otherwise a neutral "add" swatch.
+      Rectangle {
+        id: customSwatch
+        readonly property bool isPreset: ["#00FFC8", "#FF2D55", "#3B82F6", "#A855F7", "#FFB020", "#FFFFFF"].indexOf(String(sw.current).toUpperCase()) >= 0
+        width: Style.space(26)
+        height: width
+        radius: width / 2
+        color: customSwatch.isPreset ? "transparent" : sw.current
+        border.color: sw.customActive ? Commons.Color.accent : Qt.rgba(1, 1, 1, 0.35)
+        border.width: sw.customActive ? 3 : 1
+
+        Text {
+          anchors.centerIn: parent
+          visible: customSwatch.isPreset
+          text: "+"
+          textFormat: Text.PlainText
+          color: Qt.rgba(Commons.Color.popups.text.r, Commons.Color.popups.text.g, Commons.Color.popups.text.b, 0.8)
+          font.family: Style.font.family
+          font.pixelSize: Style.font.bodySmall
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: sw.requestCustom()
         }
       }
     }

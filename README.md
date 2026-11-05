@@ -1,31 +1,124 @@
 # Comet Cursor
 
-Cursor Pro style mouse highlighter for the Omarchy bar. A glowing shape
-(Circle / Rhombus / Rounded) follows the cursor for demos and screencasts,
-with a color flash + expanding ripple on click and an optional spotlight dim.
+A cursor highlighter for the Omarchy bar, made for demos and screencasts: a
+glowing shape follows the pointer, flashes its color on click, ripples, can dim
+the rest of the screen, and can leave one of three animated trails behind.
 
-- **Bar icon (`◎`):** left-click toggles the halo, right-click opens settings.
-- **Popup:** shape, color, size (S/M/L/XL), border weight, left/right click
-  colors, show mode (Always / On move), spotlight dim, ripple.
-- **Click flash:** needs the Hyprland click bridge (non-consuming binds, the
-  click still reaches the app). Install it once:
+## Requirements
+
+- Omarchy (the Quickshell shell) running on Hyprland.
+- Nothing else: no network access, no extra packages, no background services.
+
+## Install
 
 ```bash
+omarchy plugin add https://github.com/NickmDrummer/comet-cursor.git --enable --yes
 bash ~/.config/omarchy/plugins/nickmdrummer.comet-cursor/setup.sh
 ```
 
-Without the bridge the halo still follows the cursor; only the click flash
-and ripple stay idle.
+- The first command clones, validates and enables the plugin. Omarchy installs
+  it under `~/.config/omarchy/plugins/<plugin id>`, which is why the path in the
+  second command is fixed, and places the widget in the bar's `right` section
+  (its manifest default).
+- The second command is **optional**: it installs the click bridge, which is what
+  makes the halo flash on left/right click. Without it, the halo, spotlight and
+  trails all work; only the click colors and the ripple stay idle.
 
-Settings persist to the widget entry in `~/.config/omarchy/shell.json`
-(`omarchy bar set nickmdrummer.comet-cursor <key> <value>` edits the same keys,
-`en.json`/`es.json` in `i18n/` follow Setup > Language live).
+The click bridge installer:
 
-## Files
+- backs up `~/.config/hypr/hyprland.lua` with a timestamp,
+- appends one marked block that loads `comet-cursor.lua`,
+- reloads Hyprland.
 
-- `manifest.json` — plugin manifest + settings schema
-- `BarWidget.qml` — bar pill, cursor polling, popup settings
-- `Overlay.qml` — per-monitor fullscreen click-through overlay
-- `HaloShape.qml` — the glowing shape
-- `HaloModel.js` — pure helpers (unit-tested, runs under node)
-- `comet-cursor.lua` + `setup.sh` — Hyprland click bridge hook
+It is idempotent: running it again never duplicates the block.
+
+## Uninstall
+
+Order matters. Remove the hook **before** deleting the plugin folder, because
+`omarchy plugin remove` deletes the folder and would take `setup.sh` with it.
+
+```bash
+bash ~/.config/omarchy/plugins/nickmdrummer.comet-cursor/setup.sh --remove
+omarchy plugin remove nickmdrummer.comet-cursor --yes
+```
+
+- `setup.sh --remove` deletes only its own marked block from `hyprland.lua`
+  (after a timestamped backup) and reloads Hyprland. It needs nothing beyond a
+  stock system: the rewrite uses `awk`.
+- `omarchy plugin remove` disables the widget (removing its entry from the bar
+  layout) and deletes the plugin folder.
+
+Nothing else is left behind. The plugin only ever writes its own entry in
+`~/.config/omarchy/shell.json` and a `click.json` inside `$XDG_RUNTIME_DIR`,
+which the session clears on logout. The timestamped `hyprland.lua.bak.*` copies
+are yours to delete by hand whenever you like.
+
+## Usage
+
+- **Bar pill `☄ COMET`** — left-click toggles the effect, right-click opens the
+  settings window.
+- **APPEARANCE** — shape (Circle / Rhombus / Rounded), size, border weight, halo
+  color and the left/right click flash colors. Each palette has six presets plus
+  a `+` swatch that opens an HSV picker with a hex field for any other color.
+- **BEHAVIOR** — enable, show (Always / On move), spotlight, ripple. Holding a
+  click keeps its color until you release it.
+- **TRAILS** — style (Off / Pixels / Feather / Ribbon), length, width, opacity,
+  and color (follow the halo, which also picks up the click flash, or a custom
+  color).
+
+Trails are independent of the halo: with the halo off, a trail still draws.
+
+## Settings
+
+Everything lives in the widget entry of `~/.config/omarchy/shell.json`. The same
+keys can be changed from the command line:
+
+```bash
+omarchy bar set nickmdrummer.comet-cursor <key> <value>
+```
+
+| key | values |
+| --- | --- |
+| `enabled` | `true`, `false` |
+| `shape` | `Circle`, `Rhombus`, `Rounded` |
+| `size` | `S`, `M`, `L`, `XL` |
+| `borderWeight` | `Thin`, `Regular`, `Bold` |
+| `color` | `#RRGGBB` (halo) |
+| `leftClickColor` | `#RRGGBB` |
+| `rightClickColor` | `#RRGGBB` |
+| `mode` | `Always`, `On move` |
+| `spotlight` | `true`, `false` |
+| `ripple` | `true`, `false` |
+| `trailStyle` | `Off`, `Pixels`, `Feather`, `Ribbon` |
+| `trailLength` | `200`–`2000` (ms) |
+| `trailWidth` | `2`–`16` |
+| `trailOpacity` | `10`–`100` (%) |
+| `trailColorMode` | `Halo`, `Custom` |
+| `trailColor` | `#RRGGBB` |
+
+## How it works
+
+- **Overlay** — one fullscreen, click-through layer surface per monitor
+  (`Overlay.qml`). It only paints; the bar widget owns all the state.
+- **Click bridge** — Hyprland does not report mouse buttons over its IPC socket,
+  so `comet-cursor.lua` adds three *non-consuming* binds that write a tiny JSON
+  file under `$XDG_RUNTIME_DIR`. Non-consuming means the click still reaches the
+  app underneath: the binds only observe.
+- **Sampling** — the pointer is sampled through `hyprctl cursorpos` at roughly
+  30 Hz. The trail rebuilds those samples as tangent-continuous cubic curves, so
+  a fast circle stays round instead of turning into a hexagon.
+
+## Troubleshooting
+
+- **Nothing appears** — run `omarchy restart shell`. The shell's hot reload
+  re-instantiates widgets but keeps the previously compiled QML.
+- **A change did not apply** — `omarchy-shell shell rescanPlugins`.
+- **No click flash** — re-run `bash ~/.config/omarchy/plugins/nickmdrummer.comet-cursor/setup.sh`,
+  then check `hyprctl binds | grep "Comet Cursor"` lists six binds.
+- **The comet glyph looks odd** — `☄` is not part of the bar's font
+  (`Obel Mono`), so it is drawn by font fallback. Edit `text` in `BarWidget.qml`
+  if you prefer another glyph.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

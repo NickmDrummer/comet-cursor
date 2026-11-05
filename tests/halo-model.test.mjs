@@ -196,3 +196,32 @@ test("always mode ignores movement, and disabled/off-screen wins", () => {
   assert.equal(Halo.shouldShow({ ...still, enabled: false, mode: "Always" }), false);
   assert.equal(Halo.shouldShow({ ...still, enabled: true, mode: "On move", onScreen: false }), false);
 });
+
+test("hex parsing, rounding and normalization", () => {
+  assert.deepEqual(Halo.parseHexColor("#000000"), { r: 0, g: 0, b: 0 });
+  assert.deepEqual(Halo.parseHexColor("ff2d55"), { r: 255, g: 45, b: 85 });
+  assert.deepEqual(Halo.parseHexColor("#abc"), { r: 170, g: 187, b: 204 });
+  assert.equal(Halo.parseHexColor("#12345"), null);
+  assert.equal(Halo.parseHexColor("<img src=x>"), null);
+  assert.equal(Halo.normalizeHex(" #ff2d55 "), "#FF2D55");
+  assert.equal(Halo.normalizeHex("nope"), null);
+});
+
+test("HSV round-trips without losing the color", () => {
+  const samples = ["#FF2D55", "#00FFC8", "#3B82F6", "#A855F7", "#FFB020", "#FFFFFF", "#000000", "#7F3F1F"];
+  for (const hex of samples) {
+    const c = Halo.parseHexColor(hex);
+    const hsv = Halo.rgbToHsv(c.r, c.g, c.b);
+    assert.equal(Halo.hsvToHex(hsv.h, hsv.s, hsv.v), hex, hex + " did not round-trip");
+  }
+  // Out-of-range inputs clamp instead of producing garbage.
+  assert.equal(Halo.hsvToHex(360, 0, 1), "#FFFFFF");
+  assert.equal(Halo.hsvToHex(-30, 2, 0.5), Halo.hsvToHex(330, 1, 0.5));
+});
+
+test("custom hex values survive the allowlist used by the settings", () => {
+  // The picker can produce any color; cleanColor must keep it rather than
+  // falling back to a preset.
+  assert.equal(Halo.cleanColor("#7F3F1F", "#00FFC8"), "#7F3F1F");
+  assert.equal(Halo.cleanColor("#7f3f1f", "#00FFC8"), "#7F3F1F");
+});
