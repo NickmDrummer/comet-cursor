@@ -341,12 +341,61 @@ BarWidget {
     onTriggered: root.rippleActive = false
   }
 
+  // Saved custom colors for one key, as an array of up to MAX_CUSTOMS hex
+  // values. Migrates the older single-value key so nothing picked before is
+  // lost.
+  function customsFor(key) {
+    var list = Halo.cleanColorList(root.setting(key + "Customs", []));
+    var legacy = Halo.normalizeHex(root.setting(key + "Custom", ""));
+    if (legacy && list.indexOf(legacy) < 0 && list.length < Halo.MAX_CUSTOMS) list.push(legacy);
+    return list;
+  }
+
+  // Open (or close) the picker for one color key. `slot` is the custom entry
+  // being edited, or -1 for "add a new one".
+  function openCustom(key, slot) {
+    if (root.customColorTarget === key && root.customSlot === slot) {
+      root.customColorTarget = "";
+      root.customSlot = -1;
+      return;
+    }
+    if (slot >= 0) {
+      // Clicking a saved custom color applies it straight away; the picker
+      // opens on it so it can be tweaked in place.
+      var saved = root.customsFor(key)[slot];
+      if (saved) {
+        var apply = {};
+        apply[key] = saved;
+        root.save(apply);
+      }
+    }
+    root.customSlot = slot;
+    root.customColorTarget = key;
+  }
+
+  // Persist a picked color: as the active value and in the custom slots. An
+  // existing slot is replaced; a new pick fills the first free slot, up to
+  // MAX_CUSTOMS.
+  function saveCustom(key, hex, fallback, slot) {
+    var clean = Halo.cleanColor(hex, fallback);
+    var list = root.customsFor(key);
+    if (slot >= 0 && slot < list.length) list[slot] = clean;
+    else if (list.length < Halo.MAX_CUSTOMS) list.push(clean);
+    else list[Halo.MAX_CUSTOMS - 1] = clean;
+    var patch = {};
+    patch[key] = clean;
+    patch[key + "Customs"] = list;
+    root.save(patch);
+  }
+
   // ---- bar button + popup -------------------------------------------------
   property bool menuOpen: false
   // appearance | behavior | trails
   property string activeTab: "appearance"
-  // Which color row has its custom picker open ("" = none).
+  // Which color row has its custom picker open ("" = none) and which of
+  // its custom slots it edits (-1 = adding a new one).
   property string customColorTarget: ""
+  property int customSlot: -1
   function close() { root.menuOpen = false; }
 
   implicitWidth: button.implicitWidth
@@ -375,9 +424,8 @@ BarWidget {
   Overlay { host: root }
 
   // KeyboardPanel, not PopupCard: it is Omarchy's layer-shell panel built for
-  // keyboard input (focus prime + dismissal overlay). A PopupCard is an
-  // xdg-popup, which only receives keys after focus routes through its parent,
-  // so a text field inside it could never be typed into.
+  // keyboard input (focus prime + dismissal overlay), which is what a popup
+  // never grants to an xdg-popup text field. Same API surface otherwise.
   KeyboardPanel {
     id: menu
     anchorItem: button
@@ -458,43 +506,67 @@ BarWidget {
           SwatchRow {
             title: strings.t("popup.color", "Halo color")
             current: Halo.cleanColor(root.setting("color", "#00FFC8"), "#00FFC8")
+            customs: root.customsFor("color")
             customActive: root.customColorTarget === "color"
-            onPicked: function(c) { root.save({ color: Halo.cleanColor(c, "#00FFC8") }); }
-            onRequestCustom: root.customColorTarget = root.customColorTarget === "color" ? "" : "color"
+            openSlot: root.customColorTarget === "color" ? root.customSlot : -1
+            onPicked: function(c) {
+              root.save({ color: Halo.cleanColor(c, "#00FFC8") });
+              // A preset ends custom editing; the picker used to stay open
+              // until its own swatch was clicked again.
+              root.customColorTarget = "";
+              root.customSlot = -1;
+            }
+            onRequestCustom: function(slot) { root.openCustom("color", slot) }
           }
 
           ColorPicker {
             visible: root.customColorTarget === "color"
             value: Halo.cleanColor(root.setting("color", "#00FFC8"), "#00FFC8")
-            onCommitted: function(hex) { root.save({ color: Halo.cleanColor(hex, "#00FFC8") }); }
+            onCommitted: function(hex) { root.saveCustom("color", hex, "#00FFC8", root.customSlot); }
           }
 
           SwatchRow {
             title: strings.t("popup.left-click", "Left-click flash")
             current: Halo.cleanColor(root.setting("leftClickColor", "#FF2D55"), "#FF2D55")
+            customs: root.customsFor("leftClickColor")
             customActive: root.customColorTarget === "leftClickColor"
-            onPicked: function(c) { root.save({ leftClickColor: Halo.cleanColor(c, "#FF2D55") }); }
-            onRequestCustom: root.customColorTarget = root.customColorTarget === "leftClickColor" ? "" : "leftClickColor"
+            openSlot: root.customColorTarget === "leftClickColor" ? root.customSlot : -1
+            onPicked: function(c) {
+              root.save({ leftClickColor: Halo.cleanColor(c, "#FF2D55") });
+              // A preset ends custom editing; the picker used to stay open
+              // until its own swatch was clicked again.
+              root.customColorTarget = "";
+              root.customSlot = -1;
+            }
+            onRequestCustom: function(slot) { root.openCustom("leftClickColor", slot) }
           }
 
           ColorPicker {
             visible: root.customColorTarget === "leftClickColor"
             value: Halo.cleanColor(root.setting("leftClickColor", "#FF2D55"), "#FF2D55")
-            onCommitted: function(hex) { root.save({ leftClickColor: Halo.cleanColor(hex, "#FF2D55") }); }
+            onCommitted: function(hex) { root.saveCustom("leftClickColor", hex, "#FF2D55", root.customSlot); }
           }
 
           SwatchRow {
             title: strings.t("popup.right-click", "Right-click flash")
             current: Halo.cleanColor(root.setting("rightClickColor", "#3B82F6"), "#3B82F6")
+            customs: root.customsFor("rightClickColor")
             customActive: root.customColorTarget === "rightClickColor"
-            onPicked: function(c) { root.save({ rightClickColor: Halo.cleanColor(c, "#3B82F6") }); }
-            onRequestCustom: root.customColorTarget = root.customColorTarget === "rightClickColor" ? "" : "rightClickColor"
+            openSlot: root.customColorTarget === "rightClickColor" ? root.customSlot : -1
+            onPicked: function(c) {
+              root.save({ rightClickColor: Halo.cleanColor(c, "#3B82F6") });
+              // A preset ends custom editing; the picker used to stay open
+              // until its own swatch was clicked again.
+              root.customColorTarget = "";
+              root.customSlot = -1;
+            }
+            onRequestCustom: function(slot) { root.openCustom("rightClickColor", slot) }
           }
 
           ColorPicker {
             visible: root.customColorTarget === "rightClickColor"
             value: Halo.cleanColor(root.setting("rightClickColor", "#3B82F6"), "#3B82F6")
-            onCommitted: function(hex) { root.save({ rightClickColor: Halo.cleanColor(hex, "#3B82F6") }); }
+            onCommitted: function(hex) { root.saveCustom("rightClickColor", hex, "#3B82F6", root.customSlot); }
           }
         }
 
@@ -610,15 +682,23 @@ BarWidget {
             visible: root.trailColorMode === "Custom" && root.trailsOn
             title: strings.t("trail.color", "Trail color")
             current: Halo.cleanColor(root.setting("trailColor", "#00FFC8"), "#00FFC8")
+            customs: root.customsFor("trailColor")
             customActive: root.customColorTarget === "trailColor"
-            onPicked: function(c) { root.save({ trailColor: Halo.cleanColor(c, "#00FFC8") }); }
-            onRequestCustom: root.customColorTarget = root.customColorTarget === "trailColor" ? "" : "trailColor"
+            openSlot: root.customColorTarget === "trailColor" ? root.customSlot : -1
+            onPicked: function(c) {
+              root.save({ trailColor: Halo.cleanColor(c, "#00FFC8") });
+              // A preset ends custom editing; the picker used to stay open
+              // until its own swatch was clicked again.
+              root.customColorTarget = "";
+              root.customSlot = -1;
+            }
+            onRequestCustom: function(slot) { root.openCustom("trailColor", slot) }
           }
 
           ColorPicker {
             visible: root.customColorTarget === "trailColor"
             value: Halo.cleanColor(root.setting("trailColor", "#00FFC8"), "#00FFC8")
-            onCommitted: function(hex) { root.save({ trailColor: Halo.cleanColor(hex, "#00FFC8") }); }
+            onCommitted: function(hex) { root.saveCustom("trailColor", hex, "#00FFC8", root.customSlot); }
           }
 
           Text {
@@ -704,15 +784,19 @@ BarWidget {
     color: Qt.rgba(Commons.Color.popups.text.r, Commons.Color.popups.text.g, Commons.Color.popups.text.b, 0.14)
   }
 
-  // Color swatch row: the presets, plus a "custom" swatch that opens the
-  // inline picker for any other color.
+  // Color swatch row: the presets, the saved custom colors and a "+" swatch
+  // while there is still room for another one.
   component SwatchRow: Column {
     id: sw
     required property string title
     required property string current
+    // Saved custom colors for this key (up to MAX_CUSTOMS).
+    property var customs: []
     property bool customActive: false
+    // Which custom slot the open picker edits (-1 = adding a new one).
+    property int openSlot: -1
     signal picked(string color)
-    signal requestCustom()
+    signal requestCustom(int slot)
     width: parent ? parent.width : 0
     spacing: Style.space(6)
 
@@ -727,6 +811,7 @@ BarWidget {
 
     Row {
       spacing: Style.space(6)
+
       Repeater {
         model: ["#00FFC8", "#FF2D55", "#3B82F6", "#A855F7", "#FFB020", "#FFFFFF"]
         delegate: Rectangle {
@@ -735,8 +820,8 @@ BarWidget {
           height: width
           radius: width / 2
           color: modelData
-          border.color: sw.current.toUpperCase() === String(modelData).toUpperCase() ? Commons.Color.accent : Qt.rgba(1, 1, 1, 0.25)
-          border.width: sw.current.toUpperCase() === String(modelData).toUpperCase() ? 3 : 1
+          border.color: String(sw.current).toUpperCase() === String(modelData).toUpperCase() ? Commons.Color.accent : Qt.rgba(1, 1, 1, 0.25)
+          border.width: String(sw.current).toUpperCase() === String(modelData).toUpperCase() ? 3 : 1
 
           MouseArea {
             anchors.fill: parent
@@ -746,21 +831,41 @@ BarWidget {
         }
       }
 
-      // Custom color: the current value when it is not one of the presets,
-      // otherwise a neutral "add" swatch.
+      // Saved custom colors: click applies it and opens it for editing.
+      Repeater {
+        model: sw.customs
+        delegate: Rectangle {
+          required property var modelData
+          required property int index
+          readonly property bool isCurrent: String(sw.current).toUpperCase() === String(modelData).toUpperCase()
+          readonly property bool editing: sw.customActive && sw.openSlot === index
+          width: Style.space(26)
+          height: width
+          radius: width / 2
+          color: modelData
+          border.color: (isCurrent || editing) ? Commons.Color.accent : Qt.rgba(1, 1, 1, 0.35)
+          border.width: (isCurrent || editing) ? 3 : 1
+
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: sw.requestCustom(index)
+          }
+        }
+      }
+
+      // Room for another one.
       Rectangle {
-        id: customSwatch
-        readonly property bool isPreset: ["#00FFC8", "#FF2D55", "#3B82F6", "#A855F7", "#FFB020", "#FFFFFF"].indexOf(String(sw.current).toUpperCase()) >= 0
+        visible: sw.customs.length < Halo.MAX_CUSTOMS
         width: Style.space(26)
         height: width
         radius: width / 2
-        color: customSwatch.isPreset ? "transparent" : sw.current
-        border.color: sw.customActive ? Commons.Color.accent : Qt.rgba(1, 1, 1, 0.35)
-        border.width: sw.customActive ? 3 : 1
+        color: "transparent"
+        border.color: (sw.customActive && sw.openSlot === -1) ? Commons.Color.accent : Qt.rgba(1, 1, 1, 0.35)
+        border.width: (sw.customActive && sw.openSlot === -1) ? 3 : 1
 
         Text {
           anchors.centerIn: parent
-          visible: customSwatch.isPreset
           text: "+"
           textFormat: Text.PlainText
           color: Qt.rgba(Commons.Color.popups.text.r, Commons.Color.popups.text.g, Commons.Color.popups.text.b, 0.8)
@@ -771,7 +876,7 @@ BarWidget {
         MouseArea {
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
-          onClicked: sw.requestCustom()
+          onClicked: sw.requestCustom(-1)
         }
       }
     }

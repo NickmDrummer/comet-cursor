@@ -350,6 +350,27 @@ function shouldShow(o) {
 }
 
 // ---- color helpers (custom picker) --------------------------------------
+// Slots the settings window keeps next to the presets.
+var MAX_CUSTOMS = 3;
+
+// Up to MAX_CUSTOMS distinct, valid hex colors from a settings value that may
+// arrive as an array, a JSON string or junk.
+function cleanColorList(value) {
+  var input = value;
+  if (typeof input === "string") {
+    try { input = JSON.parse(input); } catch (e) { input = []; }
+  }
+  if (!Array.isArray(input)) input = [];
+  var out = [];
+  for (var i = 0; i < input.length && out.length < MAX_CUSTOMS; i++) {
+    // normalizeHex expands #ABC and uppercases, so hand-typed settings work.
+    var hex = normalizeHex(input[i]);
+    if (!hex || out.indexOf(hex) >= 0) continue;
+    out.push(hex);
+  }
+  return out;
+}
+
 function parseHexColor(value) {
   var s = String(value === undefined || value === null ? "" : value).trim().replace(/^#/, "");
   if (/^[0-9A-Fa-f]{3}$/.test(s)) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
@@ -373,6 +394,29 @@ function rgbToHex(r, g, b) {
 function normalizeHex(value) {
   var c = parseHexColor(value);
   return c ? rgbToHex(c.r, c.g, c.b) : null;
+}
+
+// Hex for anything QML hands us as a color: a "#RRGGBB"/"#RRGGBBAA" string or a
+// color object whose channels are 0..1. A QML color stringifies with alpha,
+// which is why treating `value` as a plain hex string left the picker black.
+function colorToHex(c) {
+  if (c === undefined || c === null) return null;
+  if (typeof c === "string") {
+    var asString = normalizeHex(c);
+    if (asString) return asString;
+    // "#RRGGBBAA" — drop the alpha channel, 8 digits are not a valid hex color.
+    var s = c.trim().replace(/^#/, "");
+    if (/^[0-9A-Fa-f]{8}$/.test(s)) return normalizeHex(s.substr(0, 6));
+    return null;
+  }
+  if (typeof c.r === "number" && typeof c.g === "number" && typeof c.b === "number") {
+    var scaled = c.r <= 1 && c.g <= 1 && c.b <= 1;
+    return rgbToHex(
+      scaled ? c.r * 255 : c.r,
+      scaled ? c.g * 255 : c.g,
+      scaled ? c.b * 255 : c.b);
+  }
+  return normalizeHex(String(c));
 }
 
 // {h: 0..360, s: 0..1, v: 0..1}
@@ -434,7 +478,8 @@ if (typeof module !== "undefined" && module.exports) {
     trailColorFor: trailColorFor, trimTrail: trimTrail, trailAge: trailAge,
     strokeOutline: strokeOutline, cycleEnum: cycleEnum, stepNumber: stepNumber,
     smoothPath: smoothPath, widthFactor: widthFactor,
-    parseHexColor: parseHexColor, normalizeHex: normalizeHex,
+    MAX_CUSTOMS: MAX_CUSTOMS, cleanColorList: cleanColorList,
+    parseHexColor: parseHexColor, normalizeHex: normalizeHex, colorToHex: colorToHex,
     rgbToHex: rgbToHex, rgbToHsv: rgbToHsv, hsvToRgb: hsvToRgb, hsvToHex: hsvToHex,
     TRAIL_STYLES: TRAIL_STYLES,
     MOVE_IDLE_MS: MOVE_IDLE_MS, shouldShow: shouldShow

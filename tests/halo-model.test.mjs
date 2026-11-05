@@ -225,3 +225,26 @@ test("custom hex values survive the allowlist used by the settings", () => {
   assert.equal(Halo.cleanColor("#7F3F1F", "#00FFC8"), "#7F3F1F");
   assert.equal(Halo.cleanColor("#7f3f1f", "#00FFC8"), "#7F3F1F");
 });
+
+test("colorToHex handles the shapes QML actually hands over", () => {
+  // A QML color stringifies with alpha; that is what broke the picker.
+  assert.equal(Halo.colorToHex("#ff2d55ff"), "#FF2D55");
+  assert.equal(Halo.colorToHex("#FF2D55"), "#FF2D55");
+  assert.equal(Halo.colorToHex("#abc"), "#AABBCC");
+  // QML color objects expose channels as 0..1.
+  assert.equal(Halo.colorToHex({ r: 1, g: 0, b: 0 }), "#FF0000");
+  assert.equal(Halo.colorToHex({ r: 0.5, g: 0.5, b: 0.5 }), "#808080");
+  // Plain 0..255 objects too, so tests and JS callers are unambiguous.
+  assert.equal(Halo.colorToHex({ r: 255, g: 45, b: 85 }), "#FF2D55");
+  assert.equal(Halo.colorToHex("garbage"), null);
+  assert.equal(Halo.colorToHex(null), null);
+});
+
+test("custom color slots sanitize, dedupe and cap at three", () => {
+  assert.equal(Halo.MAX_CUSTOMS, 3);
+  assert.deepEqual(Halo.cleanColorList(["#ff2d55", "#ABC", "junk", "#FF2D55"]), ["#FF2D55", "#AABBCC"]);
+  assert.deepEqual(Halo.cleanColorList('["#123456"]'), ["#123456"]);
+  assert.deepEqual(Halo.cleanColorList("nope"), []);
+  assert.deepEqual(Halo.cleanColorList(null), []);
+  assert.equal(Halo.cleanColorList(["#111111", "#222222", "#333333", "#444444"]).length, 3);
+});

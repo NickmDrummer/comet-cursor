@@ -30,7 +30,9 @@ Item {
   readonly property string hex: Halo.hsvToHex(root.hue, root.sat, root.val)
 
   function loadFromValue() {
-    var c = Halo.parseHexColor(root.value);
+    var hex = Halo.colorToHex(root.value);
+    if (!hex) return;
+    var c = Halo.parseHexColor(hex);
     if (!c) return;
     var hsv = Halo.rgbToHsv(c.r, c.g, c.b);
     root.hue = hsv.h;
@@ -38,12 +40,35 @@ Item {
     root.val = hsv.v;
   }
 
+  // Accepts whatever the user typed in the hex field; normalizes it, applies it
+  // and persists. Invalid input snaps the field back to the current color.
+  function applyHex(raw) {
+    var hex = Halo.normalizeHex(raw);
+    if (!hex) {
+      hexField.text = root.hex;
+      return;
+    }
+    root.dragging = false;
+    root.value = hex;
+    root.loadFromValue();
+    root.committed(hex);
+  }
+
   function commit() {
     root.committed(root.hex);
   }
 
+  // Keep the field in sync with the square/strip without fighting typing: the
+  // handler is skipped while the field has focus.
+  onHexChanged: if (!hexField.activeFocus && hexField.text !== root.hex) hexField.text = root.hex
+
   Component.onCompleted: root.loadFromValue()
   onValueChanged: if (!root.dragging) root.loadFromValue()
+
+  // Put the caret in the hex field as soon as the picker appears, so a custom
+  // color can be typed without an extra click (the panel is the one that owns
+  // keyboard focus, the field only has to hold it).
+  onVisibleChanged: if (visible) Qt.callLater(function() { hexField.forceActiveFocus() })
 
   Column {
     id: content
@@ -175,22 +200,12 @@ Item {
         accent: root.accent
         placeholderText: "#RRGGBB"
         text: root.hex
-        // Re-render the field when the picker moves, unless the user is typing.
-        Binding on text {
-          value: root.hex
-          when: !hexField.activeFocus
-          restoreMode: Binding.RestoreNone
-        }
-        onEditingFinished: {
-          var hex = Halo.normalizeHex(text);
-          if (hex) {
-            root.value = hex;
-            root.loadFromValue();
-            root.committed(hex);
-          } else {
-            text = root.hex;
-          }
-        }
+        // No `Binding on text` here: it fights the user's keystrokes. The
+        // picker syncs the field through onHexChanged instead, and only while
+        // the field is not being edited.
+        onAccepted: root.applyHex(text)
+        onEditingFinished: root.applyHex(text)
+        onActiveFocusChanged: if (!activeFocus) root.applyHex(text)
       }
     }
   }
