@@ -1,4 +1,4 @@
-// HaloModel — pure helpers for the Cursor Halo plugin (no Qt imports,
+// HaloModel — pure helpers for the Comet Cursor plugin (no Qt imports,
 // so node can run the unit tests in tests/).
 var COLORS = ["#00FFC8", "#FF2D55", "#3B82F6", "#A855F7", "#FFB020", "#FFFFFF"];
 var SHAPES = ["Circle", "Rhombus", "Rounded"];
@@ -77,7 +77,7 @@ function parseMonitors(raw) {
   }
 }
 
-// Click bridge file written by cursor-halo.lua:
+// Click bridge file written by comet-cursor.lua:
 // {button:"left"|"right"|"middle", at:number, down:boolean}.
 // `at` is a monotonic counter (one higher per event); the widget ignores
 // repeats of the same value so rapid clicks are never merged. `down` is false

@@ -31,7 +31,7 @@ PanelWindow {
   color: "transparent"
   exclusionMode: ExclusionMode.Ignore
 
-  WlrLayershell.namespace: "nickmdrummer-cursor-halo"
+  WlrLayershell.namespace: "nickmdrummer-comet-cursor"
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 

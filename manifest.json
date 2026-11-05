@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "id": "nickmdrummer.cursor-halo",
-  "name": "Cursor Halo",
+  "id": "nickmdrummer.comet-cursor",
+  "name": "Comet Cursor",
   "version": "0.1.0",
   "author": "nickmdrummer",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Cursor Halo",
+    "displayName": "Comet Cursor",
     "description": "Highlight the cursor with a glowing shape. Click for on/off, right-click for appearance settings.",
     "category": "Demos",
     "allowMultiple": false,

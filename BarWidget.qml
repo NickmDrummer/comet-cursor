@@ -6,13 +6,13 @@ import qs.Commons as Commons
 import qs.Ui
 import "HaloModel.js" as Halo
 
-// Cursor Halo — Cursor Pro style mouse highlighter.
+// Comet Cursor — Cursor Pro style mouse highlighter.
 //   left click  : toggle enabled
 //   right click : appearance popup
 // Each bar instance paints the halo only on its own monitor.
 BarWidget {
   id: root
-  moduleName: "nickmdrummer.cursor-halo"
+  moduleName: "nickmdrummer.comet-cursor"
 
   Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
 
@@ -226,11 +226,11 @@ BarWidget {
     onTriggered: root.hideTick = root.hideTick + 1
   }
 
-  // ---- click bridge (written by cursor-halo.lua hypr binds) --------------
+  // ---- click bridge (written by comet-cursor.lua hypr binds) --------------
   readonly property string runDir: {
     var runtime = Quickshell.env("XDG_RUNTIME_DIR");
-    if (runtime && runtime !== "") return runtime + "/nickmdrummer-cursor-halo";
-    return (Quickshell.env("HOME") || "") + "/.cache/nickmdrummer-cursor-halo";
+    if (runtime && runtime !== "") return runtime + "/nickmdrummer-comet-cursor";
+    return (Quickshell.env("HOME") || "") + "/.cache/nickmdrummer-comet-cursor";
   }
   readonly property string clickPath: root.runDir + "/click.json"
 
@@ -398,7 +398,7 @@ BarWidget {
 
         Text {
           textFormat: Text.PlainText
-          text: strings.t("popup.title", "Cursor Halo")
+          text: strings.t("popup.title", "Comet Cursor")
           color: Commons.Color.foreground
           font.family: Style.font.family
           font.pixelSize: Style.font.title
