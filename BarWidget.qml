@@ -374,17 +374,20 @@ BarWidget {
   // Per-monitor overlay painted by this instance.
   Overlay { host: root }
 
-  PopupCard {
+  // KeyboardPanel, not PopupCard: it is Omarchy's layer-shell panel built for
+  // keyboard input (focus prime + dismissal overlay). A PopupCard is an
+  // xdg-popup, which only receives keys after focus routes through its parent,
+  // so a text field inside it could never be typed into.
+  KeyboardPanel {
     id: menu
     anchorItem: button
     bar: root.bar
     owner: root
     open: root.menuOpen
-    contentWidth: menu.fittedContentWidth(Style.space(320))
-    // The card already insets its content by its own padding; the extra space
-    // below is ours, and it must be part of the height or the last row ends up
-    // squeezed against the bottom edge.
-    contentHeight: menu.fittedContentHeight(menuColumn.implicitHeight + Style.space(14))
+    contentWidth: Style.space(320)
+    // The card insets its content by its padding and border; add ours (the
+    // extra bottom breathing room) on top of that.
+    contentHeight: menuColumn.implicitHeight + menu.verticalContentInset + Style.space(14)
 
     Rectangle {
       anchors.fill: parent
